@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nhutphat1203/hestia-backend/internal/config"
 	"github.com/nhutphat1203/hestia-backend/pkg/logger"
 )
 
@@ -23,17 +24,19 @@ func LoggerMiddleware(logger *logger.Logger) gin.HandlerFunc {
 // HTTPServer bọc Gin engine
 type HTTPServer struct {
 	engine *gin.Engine
-	port   string
+	cfg    *config.Config
+	logger *logger.Logger
 }
 
-func New(port string, logger *logger.Logger) *HTTPServer {
+func New(cfg *config.Config, logger *logger.Logger) *HTTPServer {
 	r := gin.New()
 	r.Use(LoggerMiddleware(logger))
 	r.Use(gin.Recovery())
 
 	return &HTTPServer{
 		engine: r,
-		port:   port,
+		cfg:    cfg,
+		logger: logger,
 	}
 }
 
@@ -44,8 +47,7 @@ func (s *HTTPServer) RegisterRoutes() {
 	})
 }
 
-// Start server (blocking)
 func (s *HTTPServer) Start() error {
 	s.RegisterRoutes()
-	return s.engine.Run(":" + s.port)
+	return s.engine.Run(":" + s.cfg.ServerPort)
 }
