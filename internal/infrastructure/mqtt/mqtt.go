@@ -1,7 +1,10 @@
 package mqtt_client
 
 import (
+	"fmt"
+
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/google/uuid"
 	"github.com/nhutphat1203/hestia-backend/internal/config"
 	"github.com/nhutphat1203/hestia-backend/pkg/logger"
 )
@@ -21,8 +24,11 @@ type MQTTClient struct {
 
 func New(cfg *config.Config, logger *logger.Logger) *MQTTClient {
 	opts := mqtt.NewClientOptions()
-	//opts.AddBroker(cfg.MQTT.Broker)
-	//opts.SetClientID(cfg.MQTT.ClientID)
+	opts.AddBroker(cfg.MQTTBroker)
+
+	clientID := fmt.Sprintf("hestia-%s", uuid.NewString())
+
+	opts.SetClientID(clientID)
 
 	client := mqtt.NewClient(opts)
 
@@ -32,12 +38,11 @@ func New(cfg *config.Config, logger *logger.Logger) *MQTTClient {
 		logger: logger,
 	}
 }
-
 func (m *MQTTClient) Connect() error {
 	if token := m.client.Connect(); token.Wait() && token.Error() != nil {
 		return token.Error()
 	}
-	//m.logger.Info("MQTT connected to " + m.cfg.MQTT.Broker)
+	m.logger.Info("MQTT connected to " + m.cfg.MQTTBroker)
 	return nil
 }
 

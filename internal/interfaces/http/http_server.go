@@ -47,7 +47,6 @@ func (s *HTTPServer) RegisterRoutes() {
 	})
 }
 
-// Start server (blocking)
 func (s *HTTPServer) Start() error {
 	s.RegisterRoutes()
 	return s.engine.Run(":" + s.cfg.ServerPort)

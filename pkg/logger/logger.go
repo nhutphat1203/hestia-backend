@@ -3,6 +3,8 @@ package logger
 import (
 	"log"
 	"os"
+
+	"github.com/nhutphat1203/hestia-backend/internal/config"
 )
 
 type Level int
@@ -17,12 +19,29 @@ const (
 type Logger struct {
 	level Level
 	std   *log.Logger
+	cfg   *config.Config
 }
 
-func New(level Level) *Logger {
+func New(cfg *config.Config) *Logger {
+	if cfg == nil {
+		log.Fatal("Config cannot be nil")
+	}
+	var level Level = DEBUG
+	switch cfg.LogLevel {
+	case "info":
+		level = INFO
+	case "warn":
+		level = WARN
+	case "error":
+		level = ERROR
+	default:
+		level = DEBUG
+	}
+
 	return &Logger{
 		level: level,
 		std:   log.New(os.Stdout, "", log.LstdFlags|log.Lshortfile),
+		cfg:   cfg,
 	}
 }
 

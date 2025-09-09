@@ -22,3 +22,11 @@ func New(cfg *config.Config, logger *logger.Logger, httpServer *http_server.HTTP
 		mqttClient: mqttClient,
 	}
 }
+
+func (s *Server) Start() error {
+	s.logger.Info("Starting server...")
+	if err := s.httpServer.Start(); err != nil {
+		return err
+	}
+	return nil
+}
