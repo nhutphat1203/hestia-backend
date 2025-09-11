@@ -12,6 +12,7 @@ import (
 	"github.com/nhutphat1203/hestia-backend/internal/infrastructure/websocket"
 	http_server "github.com/nhutphat1203/hestia-backend/internal/interfaces/http"
 	app_logger "github.com/nhutphat1203/hestia-backend/pkg/logger"
+	"github.com/nhutphat1203/hestia-backend/pkg/worker"
 )
 
 func main() {
@@ -30,7 +31,11 @@ func main() {
 
 	httpServer := http_server.New(cfg, logger, websocketHub)
 
-	server := server.New(cfg, logger, httpServer, mqttClient, websocketHub)
+	jobQueue := make(chan worker.Job, 100)
+
+	dispatcher := worker.NewDispatcher(5, jobQueue)
+
+	server := server.New(cfg, logger, httpServer, mqttClient, websocketHub, dispatcher)
 
 	go func() {
 		if err := server.Start(); err != nil {

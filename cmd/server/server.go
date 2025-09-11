@@ -11,7 +11,9 @@ import (
 	mqtt_client "github.com/nhutphat1203/hestia-backend/internal/infrastructure/mqtt"
 	"github.com/nhutphat1203/hestia-backend/internal/infrastructure/websocket"
 	http_server "github.com/nhutphat1203/hestia-backend/internal/interfaces/http"
+	"github.com/nhutphat1203/hestia-backend/internal/jobs"
 	"github.com/nhutphat1203/hestia-backend/pkg/logger"
+	"github.com/nhutphat1203/hestia-backend/pkg/worker"
 )
 
 type Server struct {
@@ -20,20 +22,29 @@ type Server struct {
 	httpServer   *http_server.HTTPServer
 	mqttClient   mqtt_client.Client
 	websocketHub *websocket.Hub
+	dispatcher   *worker.Dispatcher
 }
 
-func New(cfg *config.Config, logger *logger.Logger, httpServer *http_server.HTTPServer, mqttClient mqtt_client.Client, websocketHub *websocket.Hub) *Server {
+func New(cfg *config.Config,
+	logger *logger.Logger,
+	httpServer *http_server.HTTPServer,
+	mqttClient mqtt_client.Client,
+	websocketHub *websocket.Hub,
+	dispatcher *worker.Dispatcher) *Server {
 	return &Server{
 		cfg:          cfg,
 		logger:       logger,
 		httpServer:   httpServer,
 		mqttClient:   mqttClient,
 		websocketHub: websocketHub,
+		dispatcher:   dispatcher,
 	}
 }
 
 func (s *Server) Start() error {
 	s.logger.Info("Starting server...")
+
+	go s.dispatcher.Run()
 
 	// Connect MQTT trước
 	if err := s.mqttClient.Connect(); err != nil {
@@ -59,9 +70,7 @@ func (s *Server) Start() error {
 			return
 		}
 
-		room := s.websocketHub.GetOrCreateRoom(roomID)
-
-		room.Broadcast(msg.Payload())
+		s.dispatcher.JobQueue <- jobs.NewBroadcastJob(msg.Payload(), roomID, s.websocketHub)
 	})
 
 	if err != nil {
