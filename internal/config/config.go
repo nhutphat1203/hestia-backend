@@ -15,6 +15,7 @@ type Config struct {
 	MQTTPass    string
 	DatabaseDSN string
 	LogLevel    string
+	TopicQoS    string
 }
 
 func getEnv(key, def string) string {
@@ -36,6 +37,7 @@ func LoadConfig() (*Config, error) {
 		MQTTPass:    getEnv("MQTT_PASSWORD", ""),
 		DatabaseDSN: getEnv("DATABASE_DSN", ""),
 		LogLevel:    getEnv("LOG_LEVEL", "debug"),
+		TopicQoS:    getEnv("TOPIC_QOS", "1"),
 	}
 
 	return cfg, nil

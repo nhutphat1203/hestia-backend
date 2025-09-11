@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/nhutphat1203/hestia-backend/internal/config"
+	"github.com/nhutphat1203/hestia-backend/internal/infrastructure/websocket"
 	"github.com/nhutphat1203/hestia-backend/pkg/logger"
 )
 
@@ -20,13 +21,14 @@ func LoggerMiddleware(logger *logger.Logger) gin.HandlerFunc {
 }
 
 type HTTPServer struct {
-	engine *gin.Engine
-	cfg    *config.Config
-	logger *logger.Logger
-	server *http.Server
+	engine       *gin.Engine
+	cfg          *config.Config
+	logger       *logger.Logger
+	server       *http.Server
+	websocketHub *websocket.Hub
 }
 
-func New(cfg *config.Config, logger *logger.Logger) *HTTPServer {
+func New(cfg *config.Config, logger *logger.Logger, websocketHub *websocket.Hub) *HTTPServer {
 	r := gin.New()
 	r.Use(LoggerMiddleware(logger))
 	r.Use(gin.Recovery())
@@ -37,10 +39,11 @@ func New(cfg *config.Config, logger *logger.Logger) *HTTPServer {
 	}
 
 	return &HTTPServer{
-		engine: r,
-		cfg:    cfg,
-		logger: logger,
-		server: srv,
+		engine:       r,
+		cfg:          cfg,
+		logger:       logger,
+		server:       srv,
+		websocketHub: websocketHub,
 	}
 }
 
@@ -48,6 +51,13 @@ func (s *HTTPServer) RegisterRoutes() {
 	s.engine.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
+
+	ws := s.engine.Group("/ws/v1/env")
+	{
+		ws.GET("", func(c *gin.Context) {
+			s.websocketHub.ServeWS(c)
+		})
+	}
 }
 
 func (s *HTTPServer) Start() error {

@@ -9,6 +9,7 @@ import (
 	"github.com/nhutphat1203/hestia-backend/cmd/server"
 	"github.com/nhutphat1203/hestia-backend/internal/config"
 	mqtt_client "github.com/nhutphat1203/hestia-backend/internal/infrastructure/mqtt"
+	"github.com/nhutphat1203/hestia-backend/internal/infrastructure/websocket"
 	http_server "github.com/nhutphat1203/hestia-backend/internal/interfaces/http"
 	app_logger "github.com/nhutphat1203/hestia-backend/pkg/logger"
 )
@@ -25,9 +26,11 @@ func main() {
 
 	mqttClient := mqtt_client.New(cfg, logger)
 
-	httpServer := http_server.New(cfg, logger)
+	websocketHub := websocket.NewHub()
 
-	server := server.New(cfg, logger, httpServer, mqttClient)
+	httpServer := http_server.New(cfg, logger, websocketHub)
+
+	server := server.New(cfg, logger, httpServer, mqttClient, websocketHub)
 
 	go func() {
 		if err := server.Start(); err != nil {

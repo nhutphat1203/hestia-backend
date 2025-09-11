@@ -40,7 +40,12 @@ func main() {
 			case <-done:
 				return
 			default:
-				payload := fmt.Sprintf("Random data: %d", rand.Intn(1000))
+				payload := fmt.Sprintf(`
+				{
+					"roomID": "0001",
+					"temperature": %d,
+					"humidity": %d
+				}`, rand.Intn(1000), rand.Intn(100))
 				token := client.Publish(*topic, 0, false, payload)
 				token.Wait()
 				fmt.Printf("📤 Published: %s\n", payload)
