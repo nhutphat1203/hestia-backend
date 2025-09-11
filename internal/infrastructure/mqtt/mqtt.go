@@ -14,6 +14,7 @@ type Client interface {
 	Subscribe(topic string, qos byte, callback mqtt.MessageHandler) error
 	Publish(topic string, qos byte, retained bool, payload interface{}) error
 	Unsubscribe(topics ...string) error
+	Disconnect()
 }
 
 type MQTTClient struct {
@@ -62,4 +63,10 @@ func (m *MQTTClient) Unsubscribe(topics ...string) error {
 	token := m.client.Unsubscribe(topics...)
 	token.Wait()
 	return token.Error()
+}
+
+func (m *MQTTClient) Disconnect() {
+	m.logger.Info("MQTT disconnecting...")
+	m.client.Disconnect(250)
+	m.logger.Info("MQTT disconnected")
 }
