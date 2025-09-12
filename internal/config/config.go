@@ -18,7 +18,11 @@ type Config struct {
 	LogLevel          string
 	TopicQoS          byte
 	WorkerCount       int
-	IDENTIFY_PROPERTY string
+	Identify_property string
+	InfluxDBURL       string
+	InfluxDBToken     string
+	InfluxDBOrg       string
+	InfluxDBBucket    string
 }
 
 func getEnv(key, def string) string {
@@ -53,7 +57,11 @@ func LoadConfig() (*Config, error) {
 		LogLevel:          getEnv("LOG_LEVEL", "debug"),
 		TopicQoS:          byte(topicQoS),
 		WorkerCount:       workerCount,
-		IDENTIFY_PROPERTY: getEnv("IDENTIFY_PROPERTY", "roomID"),
+		Identify_property: getEnv("IDENTIFY_PROPERTY", "roomID"),
+		InfluxDBURL:       getEnv("INFLUXDB_URL", ""),
+		InfluxDBToken:     getEnv("INFLUXDB_TOKEN", ""),
+		InfluxDBOrg:       getEnv("INFLUXDB_ORG", ""),
+		InfluxDBBucket:    getEnv("INFLUXDB_BUCKET", ""),
 	}
 
 	return cfg, nil

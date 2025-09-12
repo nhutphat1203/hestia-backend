@@ -1,0 +1,20 @@
+version: "3.9"
+
+services:
+  influxdb:
+    image: influxdb:latest
+    container_name: influxdb
+    ports:
+      - "8086:8086"  # cổng HTTP API
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+    environment:
+      - INFLUXDB_MODE=setup
+      - INFLUXDB_USERNAME=admin
+      - INFLUXDB_PASSWORD=123456789
+      - INFLUXDB_ORG=Hestia
+      - INFLUXDB_BUCKET=mybucket
+      - INFLUXDB_ADMIN_TOKEN=mytoken
+
+volumes:
+  influxdb_data:
