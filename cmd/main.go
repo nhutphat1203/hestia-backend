@@ -33,7 +33,7 @@ func main() {
 
 	jobQueue := make(chan worker.Job, 100)
 
-	dispatcher := worker.NewDispatcher(5, jobQueue)
+	dispatcher := worker.NewDispatcher(cfg.WorkerCount, jobQueue)
 
 	server := server.New(cfg, logger, httpServer, mqttClient, websocketHub, dispatcher)
 

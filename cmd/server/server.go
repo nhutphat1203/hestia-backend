@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"strconv"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -52,12 +51,7 @@ func (s *Server) Start() error {
 	}
 	s.logger.Info("MQTT client connected")
 
-	qos, err := strconv.Atoi(s.cfg.TopicQoS)
-	if err != nil {
-		return err
-	}
-
-	err = s.mqttClient.Subscribe(s.cfg.MQTTTopic, byte(qos), func(client mqtt.Client, msg mqtt.Message) {
+	err := s.mqttClient.Subscribe(s.cfg.MQTTTopic, s.cfg.TopicQoS, func(client mqtt.Client, msg mqtt.Message) {
 		s.logger.Debug("Received message on topic: " + msg.Topic())
 		s.logger.Debug("Payload: " + string(msg.Payload()))
 		var payload map[string]interface{}
@@ -65,7 +59,7 @@ func (s *Server) Start() error {
 			return
 		}
 
-		roomID, ok := payload["roomID"].(string)
+		roomID, ok := payload[s.cfg.IDENTIFY_PROPERTY].(string)
 		if !ok {
 			return
 		}
