@@ -8,9 +8,12 @@ import (
 
 	"github.com/nhutphat1203/hestia-backend/cmd/server"
 	"github.com/nhutphat1203/hestia-backend/internal/config"
+	influxdb_client "github.com/nhutphat1203/hestia-backend/internal/infrastructure/influxdb"
 	mqtt_client "github.com/nhutphat1203/hestia-backend/internal/infrastructure/mqtt"
 	"github.com/nhutphat1203/hestia-backend/internal/infrastructure/websocket"
 	http_server "github.com/nhutphat1203/hestia-backend/internal/interfaces/http"
+	repository "github.com/nhutphat1203/hestia-backend/internal/repositories"
+	service "github.com/nhutphat1203/hestia-backend/internal/services"
 	app_logger "github.com/nhutphat1203/hestia-backend/pkg/logger"
 	"github.com/nhutphat1203/hestia-backend/pkg/worker"
 )
@@ -20,6 +23,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Println(cfg)
+
 	log.Println("Config loaded")
 
 	logger := app_logger.New(cfg)
@@ -33,9 +38,16 @@ func main() {
 
 	jobQueue := make(chan worker.Job, 100)
 
-	dispatcher := worker.NewDispatcher(5, jobQueue)
+	dispatcher := worker.NewDispatcher(cfg.WorkerCount, jobQueue)
 
-	server := server.New(cfg, logger, httpServer, mqttClient, websocketHub, dispatcher)
+	influxDBClient := influxdb_client.NewInfluxDBClient(cfg, logger)
+	defer influxDBClient.Close()
+
+	measurementRepo := repository.NewInfluxDBRepo(influxDBClient)
+
+	measurementService := service.NewMeasurementService(measurementRepo)
+
+	server := server.New(cfg, logger, httpServer, mqttClient, websocketHub, dispatcher, measurementService)
 
 	go func() {
 		if err := server.Start(); err != nil {
