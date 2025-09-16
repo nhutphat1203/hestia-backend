@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nhutphat1203/hestia-backend/internal/config"
@@ -34,8 +35,11 @@ func New(cfg *config.Config, logger *logger.Logger, websocketHub *websocket.Hub)
 	r.Use(gin.Recovery())
 
 	srv := &http.Server{
-		Addr:    ":" + cfg.ServerPort,
-		Handler: r,
+		Addr:         ":" + cfg.ServerPort,
+		Handler:      r,
+		ReadTimeout:  cfg.ServerReadTimeout * time.Second,
+		WriteTimeout: cfg.ServerWriteTimeout * time.Second,
+		IdleTimeout:  cfg.ServerIdleTimeout * time.Second,
 	}
 
 	return &HTTPServer{
