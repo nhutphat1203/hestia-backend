@@ -1,11 +1,35 @@
 version: "3.9"
 
 services:
+  app:
+    build: .
+    container_name: hestia
+    env_file:
+      - .env
+    expose:
+      - "8080"   # chỉ cho các service trong network backend truy cập
+    depends_on:
+      - influxdb
+    networks:
+      - backend
+
+  caddy:
+    image: caddy:latest
+    container_name: caddy_proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    depends_on:
+      - app
+    networks:
+      - backend
+
   influxdb:
     image: influxdb:latest
     container_name: influxdb
-    ports:
-      - "8086:8086"  # cổng HTTP API
+    # KHÔNG có ports -> không public ra host
     volumes:
       - influxdb_data:/var/lib/influxdb2
     environment:
@@ -15,6 +39,12 @@ services:
       - INFLUXDB_ORG=Hestia
       - INFLUXDB_BUCKET=mybucket
       - INFLUXDB_ADMIN_TOKEN=mytoken
+    networks:
+      - backend
 
 volumes:
   influxdb_data:
+
+networks:
+  backend:
+    driver: bridge

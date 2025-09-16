@@ -11,7 +11,7 @@ import (
 	influxdb_client "github.com/nhutphat1203/hestia-backend/internal/infrastructure/influxdb"
 	mqtt_client "github.com/nhutphat1203/hestia-backend/internal/infrastructure/mqtt"
 	"github.com/nhutphat1203/hestia-backend/internal/infrastructure/websocket"
-	http_server "github.com/nhutphat1203/hestia-backend/internal/interfaces/http"
+	http_server "github.com/nhutphat1203/hestia-backend/internal/interfaces/http/http_server"
 	repository "github.com/nhutphat1203/hestia-backend/internal/repositories"
 	service "github.com/nhutphat1203/hestia-backend/internal/services"
 	app_logger "github.com/nhutphat1203/hestia-backend/pkg/logger"

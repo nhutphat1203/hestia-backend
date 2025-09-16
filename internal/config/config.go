@@ -10,7 +10,7 @@ import (
 
 type Config struct {
 	AppEnv             string
-	ServerPort         string
+	ServerAddress      string
 	MQTTBroker         string
 	MQTTTopic          string
 	MQTTUser           string
@@ -27,6 +27,8 @@ type Config struct {
 	ServerReadTimeout  time.Duration
 	ServerWriteTimeout time.Duration
 	ServerIdleTimeout  time.Duration
+	StaticToken        string
+	MQTTSSL            bool
 }
 
 func getEnv(key, def string) string {
@@ -44,6 +46,11 @@ func getEnvInt(key, def string) (int, error) {
 func getEnvDuration(key, def string) (time.Duration, error) {
 	valStr := getEnv(key, def)
 	return time.ParseDuration(valStr)
+}
+
+func getBool(key, def string) (bool, error) {
+	val := getEnv(key, def)
+	return strconv.ParseBool(val)
 }
 
 func LoadConfig() (*Config, error) {
@@ -73,9 +80,15 @@ func LoadConfig() (*Config, error) {
 		return nil, err
 	}
 
+	mqttSSL, err := getBool("MQTT_SSL", "false")
+
+	if err != nil {
+		return nil, err
+	}
+
 	cfg := &Config{
 		AppEnv:             getEnv("APP_ENV", "development"),
-		ServerPort:         getEnv("SERVER_PORT", "8080"),
+		ServerAddress:      getEnv("SERVER_ADDRESS", "0.0.0.0:8080"),
 		MQTTBroker:         getEnv("MQTT_BROKER", ""),
 		MQTTTopic:          getEnv("MQTT_TOPIC", ""),
 		MQTTUser:           getEnv("MQTT_USERNAME", ""),
@@ -92,6 +105,8 @@ func LoadConfig() (*Config, error) {
 		ServerReadTimeout:  readTimeout,
 		ServerWriteTimeout: writeTimeout,
 		ServerIdleTimeout:  idleTimeout,
+		StaticToken:        getEnv("STATIC_TOKEN", ""),
+		MQTTSSL:            mqttSSL,
 	}
 
 	return cfg, nil

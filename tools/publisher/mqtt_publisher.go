@@ -3,23 +3,38 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"math/rand"
 	"os"
 	"os/signal"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/nhutphat1203/hestia-backend/internal/config"
 )
 
 func main() {
 
-	broker := flag.String("broker", "tcp://localhost:1883", "Địa chỉ MQTT broker")
+	broker := flag.String("broker", "example.com", "Địa chỉ MQTT broker")
 	topic := flag.String("topic", "test/topic", "Topic để publish dữ liệu")
 	interval := flag.Int("interval", 1, "Khoảng thời gian giữa các message (giây)")
 	flag.Parse()
 
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println(cfg)
 	opts := mqtt.NewClientOptions().AddBroker(*broker)
 	opts.SetClientID(fmt.Sprintf("publisher-%d", time.Now().UnixNano()))
+	// Nếu broker yêu cầu username/password
+	if cfg.MQTTUser != "" {
+		opts.SetUsername(cfg.MQTTUser)
+	}
+	if cfg.MQTTPass != "" {
+		opts.SetPassword(cfg.MQTTPass)
+	}
 	client := mqtt.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		panic(token.Error())
