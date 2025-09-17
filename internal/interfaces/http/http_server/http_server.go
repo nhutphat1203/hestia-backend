@@ -4,10 +4,13 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nhutphat1203/hestia-backend/internal/config"
+	"github.com/nhutphat1203/hestia-backend/internal/infrastructure/auth"
 	"github.com/nhutphat1203/hestia-backend/internal/infrastructure/websocket"
+	"github.com/nhutphat1203/hestia-backend/internal/interfaces/http/middlewares"
 	"github.com/nhutphat1203/hestia-backend/pkg/logger"
 )
 
@@ -34,8 +37,11 @@ func New(cfg *config.Config, logger *logger.Logger, websocketHub *websocket.Hub)
 	r.Use(gin.Recovery())
 
 	srv := &http.Server{
-		Addr:    ":" + cfg.ServerPort,
-		Handler: r,
+		Addr:         cfg.ServerAddress,
+		Handler:      r,
+		ReadTimeout:  cfg.ServerReadTimeout * time.Second,
+		WriteTimeout: cfg.ServerWriteTimeout * time.Second,
+		IdleTimeout:  cfg.ServerIdleTimeout * time.Second,
 	}
 
 	return &HTTPServer{
@@ -52,8 +58,18 @@ func (s *HTTPServer) RegisterRoutes() {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
+	/*
+		authGroup := s.engine.Group("/api/v1")
+		{
+			authenticator := auth.NewStaticTokenAuth(s.cfg.StaticToken)
+			authGroup.Use(middlewares.AuthMiddleware(authenticator))
+		}
+	*/
+
 	ws := s.engine.Group("/ws/v1/env")
 	{
+		authenticator := auth.NewStaticTokenAuth(s.cfg.StaticToken)
+		ws.Use(middlewares.AuthMiddleware(authenticator))
 		ws.GET("", func(c *gin.Context) {
 			s.websocketHub.ServeWS(c)
 		})
@@ -62,7 +78,7 @@ func (s *HTTPServer) RegisterRoutes() {
 
 func (s *HTTPServer) Start() error {
 	s.RegisterRoutes()
-	s.logger.Info("HTTP server starting on port " + s.cfg.ServerPort)
+	s.logger.Info("HTTP server starting on address " + s.cfg.ServerAddress)
 	return s.server.ListenAndServe()
 }
 

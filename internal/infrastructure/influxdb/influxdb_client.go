@@ -18,7 +18,7 @@ type InfluxDBClient struct {
 
 // NewInfluxDBClient tạo client mới
 func NewInfluxDBClient(cfg *config.Config, logger *logger.Logger) *InfluxDBClient {
-	client := influxdb2.NewClient(cfg.InfluxDBURL, cfg.InfluxDBToken)
+	client := influxdb2.NewClient(cfg.InfluxDBURL, cfg.InfluxDBAdminToken)
 	return &InfluxDBClient{
 		Client: client,
 		Cfg:    cfg,

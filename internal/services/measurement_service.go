@@ -15,11 +15,18 @@ func NewMeasurementService(repo repository.MeasurementRepository) *MeasurementSe
 
 func (s *MeasurementService) RecordData(data *domain.SensorData) error {
 	fields := map[string]interface{}{
-		"temperature": data.Temperature,
-		"humidity":    data.Humidity,
+		"temperature": data.Measure.T,
+		"humidity":    data.Measure.H,
+		"pressure":    data.Measure.P,
+		"lux":         data.Measure.Lux,
+		"score":       data.Score,
+		"state":       data.State,
 	}
+
 	tags := map[string]string{
-		"room": data.RoomID,
+		"room":   data.RoomID,
+		"type":   data.Type,
+		"source": data.Meta.Source,
 	}
 	return s.repo.WriteMeasurement("environment", fields, tags)
 }

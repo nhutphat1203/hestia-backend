@@ -10,7 +10,7 @@ import (
 	"github.com/nhutphat1203/hestia-backend/internal/domain"
 	mqtt_client "github.com/nhutphat1203/hestia-backend/internal/infrastructure/mqtt"
 	"github.com/nhutphat1203/hestia-backend/internal/infrastructure/websocket"
-	http_server "github.com/nhutphat1203/hestia-backend/internal/interfaces/http"
+	http_server "github.com/nhutphat1203/hestia-backend/internal/interfaces/http/http_server"
 	"github.com/nhutphat1203/hestia-backend/internal/jobs"
 	service "github.com/nhutphat1203/hestia-backend/internal/services"
 	"github.com/nhutphat1203/hestia-backend/pkg/logger"
@@ -51,39 +51,17 @@ func (s *Server) Start() error {
 
 	go s.dispatcher.Run()
 
-	// Connect MQTT trước
-	if err := s.mqttClient.Connect(); err != nil {
-		return err
-	}
-	s.logger.Info("MQTT client connected")
-
-	err := s.mqttClient.Subscribe(s.cfg.MQTTTopic, s.cfg.TopicQoS, func(client mqtt.Client, msg mqtt.Message) {
-		s.logger.Debug("Received message on topic: " + msg.Topic())
-		s.logger.Debug("Payload: " + string(msg.Payload()))
-
-		var sensorData domain.SensorData
-		if err := json.Unmarshal(msg.Payload(), &sensorData); err != nil {
-			s.logger.Error("Failed to unmarshal sensor data: " + err.Error())
-			return
-		}
-
-		s.dispatcher.JobQueue <- jobs.NewSaveMeasurementJob(sensorData, s.measurementService)
-
-		s.dispatcher.JobQueue <- jobs.NewBroadcastJob(msg.Payload(), sensorData.RoomID, s.websocketHub)
-	})
-
-	if err != nil {
-		s.logger.Error("Subscribe failed: " + err.Error())
-	}
+	s.ConnectMQTT()
 
 	errCh := make(chan error, 1)
+
 	go func() {
 		if err := s.httpServer.Start(); err != nil {
 			errCh <- err
 		}
 	}()
 
-	err = <-errCh
+	err := <-errCh
 
 	return err
 }
@@ -98,4 +76,41 @@ func (s *Server) Stop() {
 
 	s.mqttClient.Disconnect()
 	s.logger.Info("Server stopped")
+}
+
+func (s *Server) ConnectMQTT() {
+	go func() {
+		delay := 5 * time.Second
+		for {
+			if err := s.mqttClient.Connect(); err != nil {
+				s.logger.Error("MQTT connect failed: " + err.Error())
+				s.logger.Info("Retrying...")
+				time.Sleep(delay)
+				continue
+			}
+			s.logger.Info("MQTT client connected")
+
+			if err := s.mqttClient.Subscribe(
+				s.cfg.MQTTTopic,
+				s.cfg.TopicQoS,
+				func(client mqtt.Client, msg mqtt.Message) {
+					s.logger.Debug("Received message on topic: " + msg.Topic())
+					s.logger.Debug("Payload: " + string(msg.Payload()))
+
+					var sensorData domain.SensorData
+					if err := json.Unmarshal(msg.Payload(), &sensorData); err != nil {
+						s.logger.Error("Failed to unmarshal sensor data: " + err.Error())
+						return
+					}
+
+					s.dispatcher.JobQueue <- jobs.NewSaveMeasurementJob(sensorData, s.measurementService)
+					s.dispatcher.JobQueue <- jobs.NewBroadcastJob(msg.Payload(), sensorData.RoomID, s.websocketHub)
+				},
+			); err != nil {
+				s.logger.Error("Subscribe failed: " + err.Error())
+			}
+
+			break
+		}
+	}()
 }

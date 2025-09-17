@@ -31,6 +31,17 @@ func New(cfg *config.Config, logger *logger.Logger) *MQTTClient {
 
 	opts.SetClientID(clientID)
 
+	// Nếu broker yêu cầu username/password
+	if cfg.MQTTUser != "" {
+		opts.SetUsername(cfg.MQTTUser)
+	}
+	if cfg.MQTTPass != "" {
+		opts.SetPassword(cfg.MQTTPass)
+	}
+
+	// Nếu broker dùng SSL/TLS (port 8883)
+	// Ví dụ broker = ssl://host:8883 hoặc tls://host:8883
+
 	client := mqtt.NewClient(opts)
 
 	return &MQTTClient{

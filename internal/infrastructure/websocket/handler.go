@@ -22,6 +22,7 @@ func (h *Hub) ServeWS(c *gin.Context) {
 
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to upgrade to websocket"})
 		return
 	}
 
@@ -34,6 +35,12 @@ func (h *Hub) ServeWS(c *gin.Context) {
 
 	// Goroutine gửi dữ liệu cho client
 	go func() {
+		defer func() {
+			room.RemoveClient(client.ID)
+			h.RemoveRoomIfEmpty(roomID)
+			conn.Close()
+			fmt.Printf("Client %s disconnected\n", client.ID)
+		}()
 		for msg := range client.SendCh {
 			if err := conn.WriteMessage(websocket.TextMessage, msg); err != nil {
 				room.RemoveClient(client.ID)
