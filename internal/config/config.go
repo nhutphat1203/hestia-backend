@@ -21,7 +21,7 @@ type Config struct {
 	WorkerCount        int
 	Identify_property  string
 	InfluxDBURL        string
-	InfluxDBToken      string
+	InfluxDBAdminToken string
 	InfluxDBOrg        string
 	InfluxDBBucket     string
 	ServerReadTimeout  time.Duration
@@ -99,7 +99,7 @@ func LoadConfig() (*Config, error) {
 		WorkerCount:        workerCount,
 		Identify_property:  getEnv("IDENTIFY_PROPERTY", "roomID"),
 		InfluxDBURL:        getEnv("INFLUXDB_URL", ""),
-		InfluxDBToken:      getEnv("INFLUXDB_TOKEN", ""),
+		InfluxDBAdminToken: getEnv("INFLUXDB_ADMIN_TOKEN", ""),
 		InfluxDBOrg:        getEnv("INFLUXDB_ORG", ""),
 		InfluxDBBucket:     getEnv("INFLUXDB_BUCKET", ""),
 		ServerReadTimeout:  readTimeout,

@@ -58,13 +58,14 @@ func (s *HTTPServer) RegisterRoutes() {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
-	authGroup := s.engine.Group("/api/v1")
-	{
-		authenticator := auth.NewStaticTokenAuth(s.cfg.StaticToken)
-		authGroup.Use(middlewares.AuthMiddleware(authenticator))
-	}
+	/*
+		authGroup := s.engine.Group("/api/v1")
+		{
+			authenticator := auth.NewStaticTokenAuth(s.cfg.StaticToken)
+			authGroup.Use(middlewares.AuthMiddleware(authenticator))
+		}
+	*/
 
-	// WebSocket group (có thể cũng gắn auth nếu muốn)
 	ws := s.engine.Group("/ws/v1/env")
 	{
 		authenticator := auth.NewStaticTokenAuth(s.cfg.StaticToken)

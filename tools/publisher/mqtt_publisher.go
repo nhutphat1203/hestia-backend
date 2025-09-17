@@ -16,7 +16,7 @@ import (
 func main() {
 
 	broker := flag.String("broker", "example.com", "Địa chỉ MQTT broker")
-	topic := flag.String("topic", "test/topic", "Topic để publish dữ liệu")
+	topic := flag.String("topic", "hestia/room/kit-01/type/env", "Topic để publish dữ liệu")
 	interval := flag.Int("interval", 1, "Khoảng thời gian giữa các message (giây)")
 	flag.Parse()
 
@@ -55,12 +55,34 @@ func main() {
 			case <-done:
 				return
 			default:
-				payload := fmt.Sprintf(`
-				{
-					"roomID": "0001",
-					"temperature": %d,
-					"humidity": %d
-				}`, rand.Intn(1000), rand.Intn(100))
+				payload := fmt.Sprintf(`{
+					"schemaVersion": 1,
+					"roomId": "kit-01",
+					"type": "env",
+					"ts": %d,
+					"measure": {
+						"t": %.2f,
+						"h": %.2f,
+						"p": %.2f,
+						"lux": %d
+					},
+					"score": %d,
+					"state": "OK",
+					"meta": {
+						"seq": %d,
+						"source": "gw-01@fw1.3.2",
+						"units": { "t": "C", "h": "%%", "p": "hPa", "lux": "lux" }
+					}
+				}`,
+					time.Now().UnixMilli(),
+					20+10*rand.Float64(),  // t
+					40+60*rand.Float64(),  // h
+					980+40*rand.Float64(), // p
+					rand.Intn(200),        // lux
+					rand.Intn(100),        // score
+					rand.Intn(10000),      // seq
+				)
+
 				token := client.Publish(*topic, 0, false, payload)
 				token.Wait()
 				fmt.Printf("📤 Published: %s\n", payload)

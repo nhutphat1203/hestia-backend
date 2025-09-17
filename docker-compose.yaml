@@ -1,44 +1,31 @@
-version: "3.9"
-
 services:
   app:
     build: .
     container_name: hestia
     env_file:
       - .env
-    expose:
-      - "8080"   # chỉ cho các service trong network backend truy cập
+    ports:                # publish port ra host để Nginx host truy cập
+      - "8080:8080"
     depends_on:
       - influxdb
-    networks:
-      - backend
-
-  caddy:
-    image: caddy:latest
-    container_name: caddy_proxy
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-    depends_on:
-      - app
     networks:
       - backend
 
   influxdb:
     image: influxdb:latest
     container_name: influxdb
-    # KHÔNG có ports -> không public ra host
     volumes:
       - influxdb_data:/var/lib/influxdb2
+    ports:
+      - "8086:8086"
     environment:
-      - INFLUXDB_MODE=setup
-      - INFLUXDB_USERNAME=admin
-      - INFLUXDB_PASSWORD=123456789
-      - INFLUXDB_ORG=Hestia
-      - INFLUXDB_BUCKET=mybucket
-      - INFLUXDB_ADMIN_TOKEN=mytoken
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUXDB_USERNAME}
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUXDB_PASSWORD}
+      - DOCKER_INFLUXDB_INIT_ORG=${INFLUXDB_ORG}
+      - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUXDB_BUCKET}
+      - DOCKER_INFLUXDB_INIT_RETENTION=${INFLUXDB_RETENTION}
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUXDB_ADMIN_TOKEN}
     networks:
       - backend
 
