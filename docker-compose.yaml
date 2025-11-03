@@ -8,6 +8,7 @@ services:
       - "8080:8080"
     depends_on:
       - influxdb
+      - postgres
     networks:
       - backend
 
@@ -28,9 +29,24 @@ services:
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUXDB_ADMIN_TOKEN}
     networks:
       - backend
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
 
 volumes:
   influxdb_data:
+  influxdb_config:
+  postgres_data:
 
 networks:
   backend:

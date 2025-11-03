@@ -1,7 +1,7 @@
 package main
 
 import (
-	"flag"
+	"crypto/tls"
 	"fmt"
 	"log"
 	"math/rand"
@@ -14,39 +14,45 @@ import (
 )
 
 func main() {
-
-	broker := flag.String("broker", "example.com", "Địa chỉ MQTT broker")
-	topic := flag.String("topic", "hestia/room/kit-01/type/env", "Topic để publish dữ liệu")
-	interval := flag.Int("interval", 1, "Khoảng thời gian giữa các message (giây)")
-	flag.Parse()
-
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("❌ Cannot load config: %v", err)
 	}
 
-	log.Println(cfg)
-	opts := mqtt.NewClientOptions().AddBroker(*broker)
-	opts.SetClientID(fmt.Sprintf("publisher-%d", time.Now().UnixNano()))
-	// Nếu broker yêu cầu username/password
+	// Tạo MQTT options từ config
+	opts := mqtt.NewClientOptions().
+		AddBroker("127.0.0.1:1883").
+		SetClientID(fmt.Sprintf("publisher-%d", time.Now().UnixNano()))
+
+	// Nếu có username/password
 	if cfg.MQTTUser != "" {
 		opts.SetUsername(cfg.MQTTUser)
 	}
 	if cfg.MQTTPass != "" {
 		opts.SetPassword(cfg.MQTTPass)
 	}
+
+	// Nếu MQTT_SSL = true, bật TLS
+	if cfg.MQTTSSL {
+		tlsConfig := &tls.Config{
+			InsecureSkipVerify: true, // có thể đổi sang false nếu bạn có chứng chỉ hợp lệ
+			ClientAuth:         tls.NoClientCert,
+		}
+		opts.SetTLSConfig(tlsConfig)
+	}
+
 	client := mqtt.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		panic(token.Error())
+		log.Fatalf("❌ Failed to connect MQTT: %v", token.Error())
 	}
 	defer client.Disconnect(250)
 
-	fmt.Printf("🚀 Connected to broker %s\n", *broker)
-	fmt.Printf("📤 Publishing to topic '%s' every %d second(s)\n", *topic, *interval)
+	fmt.Printf("🚀 Connected to broker %s\n", cfg.MQTTBroker)
+	fmt.Printf("📤 Publishing to topic '%s'\n", cfg.MQTTTopic)
 
+	// Bắt tín hiệu Ctrl+C
 	sigc := make(chan os.Signal, 1)
 	signal.Notify(sigc, os.Interrupt)
-
 	done := make(chan struct{})
 
 	go func() {
@@ -83,10 +89,10 @@ func main() {
 					rand.Intn(10000),      // seq
 				)
 
-				token := client.Publish(*topic, 0, false, payload)
+				token := client.Publish(cfg.MQTTTopic, 0, false, payload)
 				token.Wait()
 				fmt.Printf("📤 Published: %s\n", payload)
-				time.Sleep(time.Duration(*interval) * time.Second)
+				time.Sleep(2 * time.Second) // có thể thêm ENV để điều khiển
 			}
 		}
 	}()

@@ -7,6 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/nhutphat1203/hestia-backend/internal/domain"
+	"github.com/nhutphat1203/hestia-backend/pkg/errorf"
+	"github.com/nhutphat1203/hestia-backend/pkg/response"
 )
 
 var upgrader = websocket.Upgrader{
@@ -16,13 +18,13 @@ var upgrader = websocket.Upgrader{
 func (h *Hub) ServeWS(c *gin.Context) {
 	roomID := c.Query("room")
 	if roomID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "room id required"})
+		response.SendError(c, http.StatusBadRequest, "room id required", errorf.Validation)
 		return
 	}
 
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to upgrade to websocket"})
+		response.SendError(c, http.StatusInternalServerError, "failed to upgrade to websocket", errorf.Internal)
 		return
 	}
 

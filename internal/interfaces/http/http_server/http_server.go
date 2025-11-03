@@ -10,8 +10,11 @@ import (
 	"github.com/nhutphat1203/hestia-backend/internal/config"
 	"github.com/nhutphat1203/hestia-backend/internal/infrastructure/auth"
 	"github.com/nhutphat1203/hestia-backend/internal/infrastructure/websocket"
+	"github.com/nhutphat1203/hestia-backend/internal/interfaces/http/handlers"
 	"github.com/nhutphat1203/hestia-backend/internal/interfaces/http/middlewares"
+	service "github.com/nhutphat1203/hestia-backend/internal/services"
 	"github.com/nhutphat1203/hestia-backend/pkg/logger"
+	"github.com/nhutphat1203/hestia-backend/pkg/response"
 )
 
 func LoggerMiddleware(logger *logger.Logger) gin.HandlerFunc {
@@ -29,9 +32,10 @@ type HTTPServer struct {
 	logger       *logger.Logger
 	server       *http.Server
 	websocketHub *websocket.Hub
+	authService  *service.AuthService
 }
 
-func New(cfg *config.Config, logger *logger.Logger, websocketHub *websocket.Hub) *HTTPServer {
+func New(cfg *config.Config, logger *logger.Logger, websocketHub *websocket.Hub, authService *service.AuthService) *HTTPServer {
 	r := gin.New()
 	r.Use(LoggerMiddleware(logger))
 	r.Use(gin.Recovery())
@@ -50,30 +54,46 @@ func New(cfg *config.Config, logger *logger.Logger, websocketHub *websocket.Hub)
 		logger:       logger,
 		server:       srv,
 		websocketHub: websocketHub,
+		authService:  authService,
 	}
 }
 
 func (s *HTTPServer) RegisterRoutes() {
 	s.engine.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+		response.SendSuccess(c, http.StatusOK, "ok", nil)
 	})
 
-	/*
-		authGroup := s.engine.Group("/api/v1")
-		{
-			authenticator := auth.NewStaticTokenAuth(s.cfg.StaticToken)
-			authGroup.Use(middlewares.AuthMiddleware(authenticator))
-		}
-	*/
+	// --- JWT Authentication Setup ---
+	jwtService := auth.NewJWTService(s.cfg.JWTSecret, "hestia-api", int(s.cfg.JWTExpiration.Minutes()))
+	authHandler := handlers.NewAuthHandler(s.authService)
 
+	// --- Public Routes ---
+	authRoutes := s.engine.Group("/auth")
+	{
+		authRoutes.POST("/login", authHandler.Login)
+		authRoutes.POST("/refresh_token", authHandler.RefreshToken)
+		authRoutes.POST("/logout", authHandler.Logout)
+	}
+
+	// --- Protected API Routes ---
+	authGroup := s.engine.Group("/api/v1")
+	{
+		authGroup.Use(middlewares.AuthMiddleware(jwtService))
+		// Add other protected API routes here
+		authGroup.GET("/protected", func(c *gin.Context) {
+			response.SendSuccess(c, http.StatusOK, "This is a protected route", nil)
+		})
+	}
+
+	// --- Protected WebSocket Routes ---
 	ws := s.engine.Group("/ws/v1/env")
 	{
-		authenticator := auth.NewStaticTokenAuth(s.cfg.StaticToken)
-		ws.Use(middlewares.AuthMiddleware(authenticator))
+		ws.Use(middlewares.AuthMiddleware(jwtService))
 		ws.GET("", func(c *gin.Context) {
 			s.websocketHub.ServeWS(c)
 		})
 	}
+
 }
 
 func (s *HTTPServer) Start() error {

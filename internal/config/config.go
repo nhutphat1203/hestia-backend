@@ -15,7 +15,6 @@ type Config struct {
 	MQTTTopic          string
 	MQTTUser           string
 	MQTTPass           string
-	DatabaseDSN        string
 	LogLevel           string
 	TopicQoS           byte
 	WorkerCount        int
@@ -29,6 +28,15 @@ type Config struct {
 	ServerIdleTimeout  time.Duration
 	StaticToken        string
 	MQTTSSL            bool
+	JWTSecret          string
+	JWTExpiration      time.Duration
+	DbHost             string
+	DbPort             int
+	DbUser             string
+	DbPassword         string
+	DbName             string
+	AdminAcc           string
+	AdminPwd           string
 }
 
 func getEnv(key, def string) string {
@@ -80,8 +88,18 @@ func LoadConfig() (*Config, error) {
 		return nil, err
 	}
 
+	jwtExpiration, err := getEnvDuration("JWT_EXPIRATION", "60m")
+	if err != nil {
+		return nil, err
+	}
+
 	mqttSSL, err := getBool("MQTT_SSL", "false")
 
+	if err != nil {
+		return nil, err
+	}
+
+	dbPort, err := getEnvInt("DB_PORT", "5432")
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +111,6 @@ func LoadConfig() (*Config, error) {
 		MQTTTopic:          getEnv("MQTT_TOPIC", ""),
 		MQTTUser:           getEnv("MQTT_USERNAME", ""),
 		MQTTPass:           getEnv("MQTT_PASSWORD", ""),
-		DatabaseDSN:        getEnv("DATABASE_DSN", ""),
 		LogLevel:           getEnv("LOG_LEVEL", "debug"),
 		TopicQoS:           byte(topicQoS),
 		WorkerCount:        workerCount,
@@ -107,6 +124,15 @@ func LoadConfig() (*Config, error) {
 		ServerIdleTimeout:  idleTimeout,
 		StaticToken:        getEnv("STATIC_TOKEN", ""),
 		MQTTSSL:            mqttSSL,
+		JWTSecret:          getEnv("JWT_SECRET", "very-secret-key"),
+		JWTExpiration:      jwtExpiration,
+		DbHost:             getEnv("DB_HOST", "localhost"),
+		DbPort:             dbPort,
+		DbUser:             getEnv("DB_USER", "admin"),
+		DbPassword:         getEnv("DB_PASSWORD", "secretpassword"),
+		DbName:             getEnv("DB_NAME", "hestia"),
+		AdminAcc:           getEnv("ADMIN_ACC", "admin"),
+		AdminPwd:           getEnv("ADMIN_PWD", "123456"),
 	}
 
 	return cfg, nil
