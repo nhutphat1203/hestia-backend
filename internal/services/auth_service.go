@@ -51,10 +51,7 @@ func (s *AuthService) Login(account, password string) (TokenResponse, error) {
 
 	refreshToken := gen.GenerateToken()
 
-	hashedToken, err := hasher.Hash(refreshToken)
-	if err != nil {
-		return TokenResponse{}, err
-	}
+	hashedToken := hasher.HashToken(refreshToken)
 
 	latestSession, err := s.userSessionRepo.GetLatestSessionByUserId(user.ID)
 
@@ -76,10 +73,7 @@ func (s *AuthService) Login(account, password string) (TokenResponse, error) {
 }
 
 func (s *AuthService) Logout(refreshToken string) error {
-	hashedToken, err := hasher.Hash(refreshToken)
-	if err != nil {
-		return err
-	}
+	hashedToken := hasher.HashToken(refreshToken)
 	userSession, err := s.userSessionRepo.GetSessionByToken(hashedToken)
 	if err != nil {
 		return err
@@ -89,10 +83,7 @@ func (s *AuthService) Logout(refreshToken string) error {
 }
 
 func (s *AuthService) RefreshToken(userId uint, refreshToken string) (TokenResponse, error) {
-	hashedToken, err := hasher.Hash(refreshToken)
-	if err != nil {
-		return TokenResponse{}, err
-	}
+	hashedToken := hasher.HashToken(refreshToken)
 	userSession, err := s.userSessionRepo.GetSessionByUserIdAndToken(userId, hashedToken)
 
 	if err != nil {
@@ -110,11 +101,7 @@ func (s *AuthService) RefreshToken(userId uint, refreshToken string) (TokenRespo
 	}
 	newRefreshToken := gen.GenerateToken()
 
-	newHashedToken, err := hasher.Hash(newRefreshToken)
-
-	if err != nil {
-		return TokenResponse{}, err
-	}
+	newHashedToken := hasher.HashToken(newRefreshToken)
 
 	s.Logout(refreshToken)
 

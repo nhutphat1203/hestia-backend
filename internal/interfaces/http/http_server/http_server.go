@@ -75,16 +75,6 @@ func (s *HTTPServer) RegisterRoutes() {
 		authRoutes.POST("/logout", authHandler.Logout)
 	}
 
-	// --- Protected API Routes ---
-	authGroup := s.engine.Group("/api/v1")
-	{
-		authGroup.Use(middlewares.AuthMiddleware(jwtService))
-		// Add other protected API routes here
-		authGroup.GET("/protected", func(c *gin.Context) {
-			response.SendSuccess(c, http.StatusOK, "This is a protected route", nil)
-		})
-	}
-
 	// --- Protected WebSocket Routes ---
 	ws := s.engine.Group("/ws/v1/env")
 	{
