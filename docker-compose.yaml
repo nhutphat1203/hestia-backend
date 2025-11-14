@@ -9,11 +9,6 @@ services:
     networks:
       - backend
 
-volumes:
-  influxdb_data:
-  influxdb_config:
-  postgres_data:
-
 networks:
   backend:
     driver: bridge
