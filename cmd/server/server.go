@@ -15,6 +15,7 @@ import (
 	service "github.com/nhutphat1203/hestia-backend/internal/services"
 	"github.com/nhutphat1203/hestia-backend/pkg/logger"
 	"github.com/nhutphat1203/hestia-backend/pkg/worker"
+	"gorm.io/gorm"
 )
 
 type Server struct {
@@ -25,15 +26,18 @@ type Server struct {
 	websocketHub       *websocket.Hub
 	dispatcher         *worker.Dispatcher
 	measurementService *service.MeasurementService
+	db                 *gorm.DB
 }
 
-func New(cfg *config.Config,
+func New(
+	cfg *config.Config,
 	logger *logger.Logger,
 	httpServer *http_server.HTTPServer,
 	mqttClient mqtt_client.Client,
 	websocketHub *websocket.Hub,
 	dispatcher *worker.Dispatcher,
 	measurementService *service.MeasurementService,
+	db *gorm.DB,
 ) *Server {
 	return &Server{
 		cfg:                cfg,
@@ -43,6 +47,7 @@ func New(cfg *config.Config,
 		websocketHub:       websocketHub,
 		dispatcher:         dispatcher,
 		measurementService: measurementService,
+		db:                 db,
 	}
 }
 

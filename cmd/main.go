@@ -8,6 +8,7 @@ import (
 
 	"github.com/nhutphat1203/hestia-backend/cmd/server"
 	"github.com/nhutphat1203/hestia-backend/internal/config"
+	"github.com/nhutphat1203/hestia-backend/internal/infrastructure/db"
 	influxdb_client "github.com/nhutphat1203/hestia-backend/internal/infrastructure/influxdb"
 	mqtt_client "github.com/nhutphat1203/hestia-backend/internal/infrastructure/mqtt"
 	"github.com/nhutphat1203/hestia-backend/internal/infrastructure/websocket"
@@ -32,9 +33,25 @@ func main() {
 
 	mqttClient := mqtt_client.New(cfg, logger)
 
+	database := db.NewDB(
+		cfg.DbUser,
+		cfg.DbPassword,
+		cfg.DbHost,
+		cfg.DbName,
+		cfg.DbPort,
+	)
+
+	db.SeedData(database, cfg)
+
 	websocketHub := websocket.NewHub()
 
-	httpServer := http_server.New(cfg, logger, websocketHub)
+	userRepo := repository.NewUserRepo(database)
+
+	userSessionRepo := repository.NewUserSessionRepo(database)
+
+	authService := service.NewAuthService(userRepo, userSessionRepo, cfg, logger)
+
+	httpServer := http_server.New(cfg, logger, websocketHub, authService)
 
 	jobQueue := make(chan worker.Job, 100)
 
@@ -47,7 +64,7 @@ func main() {
 
 	measurementService := service.NewMeasurementService(measurementRepo)
 
-	server := server.New(cfg, logger, httpServer, mqttClient, websocketHub, dispatcher, measurementService)
+	server := server.New(cfg, logger, httpServer, mqttClient, websocketHub, dispatcher, measurementService, database)
 
 	go func() {
 		if err := server.Start(); err != nil {
