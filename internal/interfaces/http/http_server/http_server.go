@@ -84,6 +84,13 @@ func (s *HTTPServer) RegisterRoutes() {
 		})
 	}
 
+	ws2 := s.engine.Group("/ws/v1/env/query")
+	{
+		ws2.GET("", func(c *gin.Context) {
+			s.websocketHub.ServeWS_Token_Query(c, jwtService)
+		})
+	}
+
 }
 
 func (s *HTTPServer) Start() error {
